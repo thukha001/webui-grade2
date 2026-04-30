@@ -1,17 +1,31 @@
 <html>
     <head>
+        <link rel="stylesheet" href="assets/css/style.css">
         <title>hello dude</title>
     </head>
+    
     <body>
-        <h1></h1>
-        <button onclick="sayHello()">click</button>
-
+        <section>
+         <h1></h1>
+         <button onclick="sayHello()">click</button>
+        </section>
+        
+<!-- counter section-->
+      <section>
         <p id="counter">0</p>
         <button onclick="increment()">+1</button>
         <button onclick="dec()">-1</button>
         <button onclick="reset()">Reset</button>
+      </section>
 
-        <script src="main.js"></script>
-        <script src="counter.js"></script>
+<!-- image section  -->
+      <section>
+         <image id="photo" src="assets/image/cat.jpg" width="320">
+         <button onclick="changePic()">切替</button>
+      </section>
+
+        <script src="assets/js/main.js"></script>
+        <script src="assets/js/counter.js"></script>
+        <script src="assets/js/image.js"></script>
     </body>
 </html> 
