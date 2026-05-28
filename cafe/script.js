@@ -5,5 +5,15 @@ function reserve() {
 
     const result = document.getElementById('reserveResult');
 
-    result.textContent = `ご予約ありがとうございます！お名前: ${name}, 人数: ${count}名`;
+    if (name === '' || count === '') {
+        result.textContent = '入力してください';
+        return;
+    } else {
+        result.textContent = `✓ ご予約ありがとうございます、${name}様。${count}名様で承りました。`;
+    }
+}
+
+// recommend
+function pickRecommend() {
+    
 }
