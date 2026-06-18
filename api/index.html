@@ -3,15 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Poke API</title>
+    <title>Advanced Pokédex</title>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <section>
-        <input id="name" placeholder="ポケモン名を入力">
-        <button id="section1-btn">検索</button>
-        <p id="section1-result"></p>
-    </section>
+    <div class="container">
+        <h1>Pokédex Search</h1>
+        <div class="search-box">
+            <input id="name" placeholder="Enter Pokémon name (e.g. pikachu)" autocomplete="off">
+            <button id="section1-btn">Search</button>
+        </div>
+        <div id="section1-result" class="result-container">
+            <!-- Result will be injected here -->
+        </div>
+    </div>
     <script src="script.js"></script>
-    
 </body>
 </html>
