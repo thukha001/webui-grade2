@@ -1,80 +1,73 @@
-async function searchCharacter() {
-    const characterNameInput = document.getElementById('characterName');
-    const characterResultDiv = document.getElementById('characterResult');
-    const name = characterNameInput.value.toLowerCase().trim();
+/* ==========================================================================
+   fixtures.js
+   Lets the visitor pick a league and toggle between upcoming fixtures and
+   recent results. Both lists come from the same match-card renderer, since
+   the API shape is identical for future and past events.
+   ========================================================================== */
 
-    if (!name) {
-        characterResultDiv.innerHTML = '<p style="color: #e74c3c;">Please enter a character name.</p>';
-        return;
-    }
+(function initFixturesPage() {
+  const select = document.getElementById("league-select");
+  const list = document.getElementById("fixtures-list");
+  const tabButtons = document.querySelectorAll(".tabs button");
 
-    characterResultDiv.innerHTML = '<div class="loader"></div><p>Searching for character...</p>';
+  let currentTab = "upcoming";
+
+  select.innerHTML = buildLeagueOptions(CONFIG.DEFAULT_LEAGUE);
+  select.addEventListener("change", () => load());
+
+  tabButtons.forEach((btn) => {
+    btn.addEventListener("click", () => {
+      tabButtons.forEach((b) => { b.classList.remove("active"); b.setAttribute("aria-selected", "false"); });
+      btn.classList.add("active");
+      btn.setAttribute("aria-selected", "true");
+      currentTab = btn.dataset.tab;
+      load();
+    });
+  });
+
+  load();
+
+  async function load() {
+    const league = CONFIG.LEAGUES[select.value];
+    showLoading(list, `Loading ${currentTab === "upcoming" ? "upcoming fixtures" : "recent results"}…`);
 
     try {
-        // Search for the character by name
-        const searchUrl = `https://api.jikan.moe/v4/characters?q=${encodeURIComponent(name)}&limit=1`;
-        const searchRes = await fetch(searchUrl);
+      const events = currentTab === "upcoming"
+        ? await API.getUpcomingFixtures(league.id)
+        : await API.getRecentResults(league.id);
 
-        if (!searchRes.ok) {
-            throw new Error(`HTTP error! status: ${searchRes.status}`);
-        }
+      if (!events.length) {
+        showEmpty(list, currentTab === "upcoming"
+          ? `No upcoming fixtures scheduled yet for ${league.name}.`
+          : `No recent results available for ${league.name}.`);
+        return;
+      }
 
-        const searchData = await searchRes.json();
-
-        if (searchData.data && searchData.data.length > 0) {
-            // Take the top result
-            const character = searchData.data[0]; // Get the first result
-            
-            const detailUrl = `https://api.jikan.moe/v4/characters/${character.mal_id}/full`;
-            const detailRes = await fetch(detailUrl);
-
-            if (!detailRes.ok) {
-                throw new Error(`HTTP error fetching details! status: ${detailRes.status}`);
-            }
-            
-            const detailData = await detailRes.json();
-            const fullCharacter = detailData.data;
-
-            // FIX: Use .anime instead of .animeography for v4
-            const animeAppearances = (fullCharacter.anime || [])
-                .slice(0, 5) // Limit to top 5 appearances
-                .map(item => `<li><a href="${item.anime.url}" target="_blank">${item.anime.title}</a> <span class="role">(${item.role})</span></li>`)
-                .join('');
-
-            // FIX: Clean up MAL markdown like [i], [b], etc.
-            let aboutText = fullCharacter.about ? fullCharacter.about.replace(/\[\/?(?:b|i|u|url|spoiler)\]/g, '') : 'No description available.';
-            aboutText = aboutText.substring(0, 400) + (aboutText.length > 400 ? '...' : '');
-
-            characterResultDiv.innerHTML = `
-                <div class="character-card">
-                    <img src="${fullCharacter.images.jpg.large_image_url || fullCharacter.images.jpg.image_url}" alt="${fullCharacter.name}">
-                    <h2>${fullCharacter.name}</h2>
-                    ${fullCharacter.name_kanji ? `<p><strong>Kanji:</strong> ${fullCharacter.name_kanji}</p>` : ''}
-                    ${fullCharacter.nicknames && fullCharacter.nicknames.length > 0 ? `<p><strong>Nicknames:</strong> ${fullCharacter.nicknames.join(', ')}</p>` : ''}
-                    <h3>About</h3>
-                    <p class="about-text">${aboutText}</p>
-                    <h3>Anime Appearances</h3>
-                    <ul class="anime-list">
-                        ${animeAppearances || '<li>No anime appearances found.</li>'}
-                    </ul>
-                </div>
-            `;
-        } else {
-            characterResultDiv.innerHTML = `<p style="color: #e74c3c;">Character "${name}" not found. Please try another name.</p>`;
-        }
-
-    } catch (error) {
-        console.error('Error fetching character data:', error);
-        characterResultDiv.innerHTML = `<p style="color: #e74c3c;">Error: Could not fetch character data. ${error.message}</p>`;
+      // Past results come back oldest-first from the API; show most recent first.
+      const ordered = currentTab === "results" ? [...events].reverse() : events;
+      list.innerHTML = ordered.map(matchCardHtml).join("");
+    } catch (err) {
+      showError(list, err.message);
     }
-}
+  }
 
-// Event listener for the search button
-document.getElementById('searchBtn').addEventListener('click', searchCharacter);
-
-// Allow searching by pressing Enter key in the input field
-document.getElementById('characterName').addEventListener('keypress', function(event) {
-    if (event.key === 'Enter') {
-        searchCharacter();
-    }
-});
+  function matchCardHtml(event) {
+    const hasScore = event.intHomeScore !== null && event.intHomeScore !== undefined && event.intHomeScore !== "";
+    const scoreText = hasScore ? `${event.intHomeScore} – ${event.intAwayScore}` : "vs";
+    return `
+      <div class="match-card">
+        <div class="team home">
+          <img src="${event.strHomeTeamBadge || CONFIG.PLACEHOLDER_CREST}" alt="" loading="lazy">
+          ${escapeHtml(event.strHomeTeam)}
+        </div>
+        <div class="score">
+          ${escapeHtml(scoreText)}
+          <span class="date">${escapeHtml(formatDate(event.dateEvent, event.strTime))}</span>
+        </div>
+        <div class="team away">
+          <img src="${event.strAwayTeamBadge || CONFIG.PLACEHOLDER_CREST}" alt="" loading="lazy">
+          ${escapeHtml(event.strAwayTeam)}
+        </div>
+      </div>`;
+  }
+})();

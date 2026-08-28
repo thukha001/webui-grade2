@@ -1,26 +1,89 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Elite Scout Pro | Football Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;700;800&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
-    <link rel="stylesheet" href="football.css">
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fixtures — Matchday Central</title>
+<meta name="description" content="Upcoming kickoffs and recent results by league." />
+
+<link rel="icon" type="image/svg+xml" href="assets/favicon.svg" />
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Anton&family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
-    <div class="bg-grid"></div>
-    <div class="scanline"></div>
-    <div class="container main-reveal">
-        <h1 class="glitch-text"><i class="fa-solid fa-ranking-star"></i> Elite Scout Pro</h1>
-        <div class="search-box">
-            <input id="playerName" placeholder="Enter Player Name (e.g. Haaland)" autocomplete="off">
-            <button id="searchBtn">Analyze Player</button>
-        </div>
-        <div id="playerResult" class="result-container">
-            <!-- Player data will be injected here -->
-        </div>
+
+<header class="site-header">
+  <div class="container">
+    <a href="index.html" class="brand">
+      <span class="brand-mark">⚽</span>
+      <span>Matchday <small>Central</small></span>
+    </a>
+    <nav class="main-nav" aria-label="Primary">
+      <a href="index.html">Home</a>
+      <a href="teams.html">Teams</a>
+      <a href="standings.html">Standings</a>
+      <a href="fixtures.html">Fixtures</a>
+      <a href="players.html">Players</a>
+    </nav>
+    <div class="header-actions">
+      <form class="header-search" role="search" aria-label="Site search">
+        <input type="search" placeholder="Search team or player…" aria-label="Search team or player" />
+        <button type="submit" aria-label="Search">🔍</button>
+      </form>
+      <button class="nav-toggle" aria-label="Toggle menu" aria-expanded="false"><span></span></button>
     </div>
-    <script src="football.js"></script>
+  </div>
+</header>
+
+<section class="section section--tight">
+  <div class="container">
+    <span class="eyebrow">Schedule</span>
+    <h2>Fixtures &amp; results</h2>
+    <p class="hero-sub">Switch between upcoming kickoffs and recent full-time scores for any league.</p>
+
+    <div class="field-row">
+      <select class="select" id="league-select" aria-label="Choose a league"></select>
+      <div class="tabs" role="tablist" aria-label="Fixture type">
+        <button type="button" class="active" data-tab="upcoming" role="tab" aria-selected="true">Upcoming</button>
+        <button type="button" data-tab="results" role="tab" aria-selected="false">Results</button>
+      </div>
+    </div>
+
+    <div class="match-list" id="fixtures-list">
+      <div class="state-msg"><div class="spinner"></div>Loading fixtures…</div>
+    </div>
+  </div>
+</section>
+
+<footer class="site-footer">
+  <div class="container footer-grid">
+    <div>
+      <a href="index.html" class="brand" style="margin-bottom:10px;">
+        <span class="brand-mark">⚽</span><span>Matchday <small>Central</small></span>
+      </a>
+      <p class="footer-note">
+        Built as a school project. Live data courtesy of
+        <a href="https://www.thesportsdb.com" target="_blank" rel="noopener">TheSportsDB</a> free public API.
+      </p>
+    </div>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="index.html">Home</a>
+      <a href="teams.html">Teams</a>
+      <a href="standings.html">Standings</a>
+      <a href="fixtures.html">Fixtures</a>
+      <a href="players.html">Players</a>
+    </nav>
+  </div>
+  <div class="container">
+    <p class="footer-note mt-lg">© <span id="year"></span> Matchday Central.</p>
+  </div>
+</footer>
+
+<script src="js/config.js"></script>
+<script src="js/api.js"></script>
+<script src="js/main.js"></script>
+<script src="js/fixtures.js"></script>
 </body>
 </html>

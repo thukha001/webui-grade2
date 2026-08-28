@@ -1,69 +1,123 @@
-async function searchFootballPlayer() {
-    const input = document.getElementById('playerName');
-    const resultDiv = document.getElementById('playerResult');
-    const name = input.value.trim();
+// TOUCHLINE — player search
+// Data source: TheSportsDB free public test endpoint (key "3") — no signup or API key required.
+// Docs: https://www.thesportsdb.com/free_sports_api
 
-    if (!name) return;
+const API_BASE = "https://www.thesportsdb.com/api/v1/json/3";
+const FALLBACK_IMG = "https://placehold.co/216x216/123522/f5f3ea?text=No+Photo";
 
-    resultDiv.innerHTML = '<div class="skeleton"></div><p style="text-align:center; color:var(--primary); font-weight:800; letter-spacing:2px; animation: pulse 1s infinite alternate;">SYSTEM ANALYZING...</p>';
+const form = document.getElementById("searchForm");
+const input = document.getElementById("playerInput");
+const searchBtn = document.getElementById("searchBtn");
+const results = document.getElementById("results");
 
-    try {
-        // TheSportsDB API v3
-        const url = `https://www.thesportsdb.com/api/v1/json/3/searchplayers.php?p=${encodeURIComponent(name)}`;
-        const response = await fetch(url);
-        const data = await response.json();
+form.addEventListener("submit", (e) => {
+  e.preventDefault();
+  handleSearch();
+});
 
-        if (!data.player) {
-            resultDiv.innerHTML = '<p style="color:red;">No player found in current database.</p>';
-            return;
-        }
+async function handleSearch() {
+  const name = input.value.trim();
+  if (!name) {
+    shake(input);
+    return;
+  }
 
-        const p = data.player[0]; // Take the best match
+  setLoading(true);
+  showSkeleton();
 
-        resultDiv.innerHTML = `
-            <div class="player-card">
-                <div class="player-header">
-                    <img class="player-img" src="${p.strThumb || 'https://www.thesportsdb.com/images/media/player/thumb/default_avatar.jpg'}" alt="${p.strPlayer}">
-                    <div>
-                        <h2 style="margin:0; font-size:2rem; letter-spacing:-1px;">${p.strPlayer}</h2>
-                        <span style="color:var(--primary); font-weight:800;"><i class="fa-solid fa-shield-halved"></i> ${p.strTeam}</span>
-                    </div>
-                </div>
-                <div class="info-section">
-                    <div class="info-grid">
-                        <div class="info-item">
-                            <span class="label"><i class="fa-solid fa-crosshairs"></i> Position</span>
-                            <span class="value">${p.strPosition}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label"><i class="fa-solid fa-earth-americas"></i> Origin</span>
-                            <span class="value">${p.strNationality}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label"><i class="fa-solid fa-bolt"></i> Strong Foot</span>
-                            <span class="value">${p.strSide || 'Both'}</span>
-                        </div>
-                        <div class="info-item">
-                            <span class="label"><i class="fa-solid fa-microchip"></i> Profile</span>
-                            <span class="value">${p.strInstagram ? 'High Value' : 'Standard'}</span>
-                        </div>
-                    </div>
-                    <div class="bio">
-                        <span class="label"><i class="fa-solid fa-terminal"></i> Intel Summary</span>
-                        <p class="bio-text">${p.strDescriptionEN ? p.strDescriptionEN.substring(0, 400) + '...' : 'Analysis complete. Bio data restricted.'}</p>
-                    </div>
-                    <div class="source-note">
-                        CONNECTED TO GLOBAL_SPORTS_DB_v3 // SECURE_LINK
-                    </div>
-                </div>
-            </div>
-        `;
-    } catch (error) {
-        resultDiv.innerHTML = '<p>Error connecting to sports database.</p>';
+  try {
+    const res = await fetch(`${API_BASE}/searchplayers.php?p=${encodeURIComponent(name)}`);
+    if (!res.ok) throw new Error(`Request failed: ${res.status}`);
+    const data = await res.json();
+    const player = data.players ? data.players[0] : null;
+
+    if (!player) {
+      showEmpty(`No player found for "${name}". Check the spelling and try again.`);
+      return;
     }
+
+    renderPlayer(player);
+  } catch (err) {
+    console.error(err);
+    showError("Couldn't reach the player database. Check your connection and try again.");
+  } finally {
+    setLoading(false);
+  }
 }
 
-document.getElementById('searchBtn').addEventListener('click', searchFootballPlayer);
-document.getElementById('playerName').addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') searchFootballPlayer();
-});
+function setLoading(isLoading) {
+  searchBtn.disabled = isLoading;
+  searchBtn.querySelector("span").textContent = isLoading ? "Searching…" : "Search";
+}
+
+function showSkeleton() {
+  results.innerHTML = `<div class="skeleton"></div>`;
+}
+
+function showEmpty(message) {
+  results.innerHTML = `<p class="empty-state">${escapeHtml(message)}</p>`;
+}
+
+function showError(message) {
+  results.innerHTML = `<p class="error-state">${escapeHtml(message)}</p>`;
+}
+
+function renderPlayer(p) {
+  const photo = p.strCutout || p.strThumb || p.strRender || FALLBACK_IMG;
+  const team = p.strTeam || "Free agent";
+  const jersey = (p.strNumber && p.strNumber.trim()) || "—";
+  const bioRaw = p.strDescriptionEN || "No scouting notes on file for this player yet.";
+  const bio = bioRaw.split(". ").slice(0, 3).join(". ").trim();
+
+  const rows = [
+    ["Position", p.strPosition],
+    ["Nationality", p.strNationality],
+    ["Born", p.dateBorn],
+    ["Height", p.strHeight],
+    ["Weight", p.strWeight],
+    ["Status", p.strStatus],
+  ].filter(([, v]) => v && v.trim());
+
+  results.innerHTML = `
+    <div class="card">
+      <div class="card-top">
+        <span class="squad-number">${escapeHtml(jersey)}</span>
+        <img class="card-photo" src="${photo}" alt="${escapeHtml(p.strPlayer)}"
+             onerror="this.src='${FALLBACK_IMG}'">
+        <div>
+          <h2 class="card-name">${escapeHtml(p.strPlayer)}</h2>
+          <span class="card-team">${escapeHtml(team)}</span>
+        </div>
+      </div>
+      <div class="sheet">
+        ${rows.map(([k, v]) => `
+          <div class="sheet-row">
+            <span class="k">${escapeHtml(k)}</span>
+            <span class="v">${escapeHtml(v)}</span>
+          </div>
+        `).join("")}
+        <p class="bio">${escapeHtml(bio)}${bio.endsWith(".") ? "" : "."}</p>
+        <div class="source-note">Data via TheSportsDB</div>
+      </div>
+    </div>
+  `;
+}
+
+function shake(el) {
+  el.animate(
+    [
+      { transform: "translateX(0)" },
+      { transform: "translateX(-6px)" },
+      { transform: "translateX(6px)" },
+      { transform: "translateX(0)" },
+    ],
+    { duration: 220, easing: "ease-in-out" }
+  );
+  el.focus();
+}
+
+function escapeHtml(str) {
+  const div = document.createElement("div");
+  div.textContent = str ?? "";
+  return div.innerHTML;
+}
